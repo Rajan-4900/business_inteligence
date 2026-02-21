@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test businessTypeSelect Fix</title>
+</head>
+<body>
+    <h1>Testing businessTypeSelect Fix</h1>
+    
+    <!-- Form elements from the original HTML -->
+    <div class="form-group">
+        <label for="id_business_type">Business Type</label>
+        <input type="text" id="id_business_type" name="business_type" class="form-control" placeholder="Type of business" required>
+    </div>
+    <div class="form-group">
+        <label for="id_business_type_select">Recommended Businesses</label>
+        <select id="id_business_type_select" class="form-control">
+            <option value="">Select (optional)</option>
+        </select>
+    </div>
+    <input type="hidden" id="id_recommended_business" name="recommended_business">
+    
+    <!-- Chatbot elements -->
+    <div id="chatbot-sidebar" class="chatbot-sidebar chatbot-sidebar-closed">
+        <div id="chatbot-container" class="chatbot-container">
+            <div class="chatbot-header">
+                <h3>Assistant</h3>
+            </div>
+            <div id="chatbot-messages" class="chatbot-messages"></div>
+            <div class="chatbot-input-container">
+                <input type="text" id="chatbot-input" class="chatbot-input" placeholder="Type your message...">
+                <button type="button" id="chatbot-send" class="chatbot-send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulating the fixed code from main.js
+        let businessTypeInput, businessTypeSelect, recommendedBusinessHidden;
+
+        // Initialize business type elements after DOM is ready
+        function initBusinessTypeElements() {
+            console.log('Initializing business type elements...');
+            businessTypeInput = document.getElementById('id_business_type');
+            businessTypeSelect = document.getElementById('id_business_type_select');
+            recommendedBusinessHidden = document.getElementById('id_recommended_business');
+
+            console.log('businessTypeInput:', businessTypeInput);
+            console.log('businessTypeSelect:', businessTypeSelect);
+            console.log('recommendedBusinessHidden:', recommendedBusinessHidden);
+
+            if (businessTypeInput && businessTypeSelect) {
+                businessTypeSelect.addEventListener('change', function () {
+                    const val = this.value || '';
+                    if (val) {
+                        businessTypeInput.value = val;
+                    }
+                    if (recommendedBusinessHidden) {
+                        recommendedBusinessHidden.value = val;
+                    }
+                });
+            }
+        }
+
+        function normalizeBusinessLabel(raw) {
+            if (!raw) return '';
+            const formatted = String(raw).replace(/_/g, ' ').trim();
+            if (!formatted) return '';
+            return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+        }
+
+        function updateBusinessTypeOptionsFromPrediction(prediction) {
+            console.log('updateBusinessTypeOptionsFromPrediction called with:', prediction);
+            
+            // Ensure elements are initialized
+            if (!businessTypeSelect) {
+                businessTypeSelect = document.getElementById('id_business_type_select');
+            }
+            if (!businessTypeSelect) {
+                console.error('businessTypeSelect not found!');
+                return;
+            }
+
+            // Reset base option
+            businessTypeSelect.innerHTML = '<option value="">Select a suggested business (optional)</option>';
+
+            if (!prediction) {
+                businessTypeSelect.disabled = true;
+                return;
+            }
+
+            const unique = new Set();
+
+            if (typeof prediction === 'string') {
+                if (prediction) unique.add(prediction);
+            } else {
+                if (prediction.primary) unique.add(prediction.primary);
+                (prediction.alternatives || []).forEach(alt => {
+                    if (alt && alt.business) unique.add(alt.business);
+                });
+                (prediction.choices || []).forEach(name => {
+                    if (name) unique.add(name);
+                });
+            }
+
+            unique.forEach(name => {
+                const label = normalizeBusinessLabel(name);
+                if (!label) return;
+                const opt = document.createElement('option');
+                opt.value = label;
+                opt.textContent = label;
+                businessTypeSelect.appendChild(opt);
+            });
+
+            businessTypeSelect.disabled = unique.size === 0;
+        }
+
+        // Add message to chatbot
+        function addChatMessage(message, sender) {
+            const messagesContainer = document.getElementById('chatbot-messages');
+            if (!messagesContainer) return;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chatbot-message ' + sender;
+            messageDiv.textContent = message;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Notify chat when a map action happens
+        function notifyChatFromMap(message) {
+            addChatMessage(message, 'bot');
+        }
+
+        // Initialize elements when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initBusinessTypeElements);
+        } else {
+            initBusinessTypeElements();
+        }
+
+        // Test the functions
+        setTimeout(() => {
+            console.log('Testing updateBusinessTypeOptionsFromPrediction...');
+            try {
+                updateBusinessTypeOptionsFromPrediction('cafe');
+                console.log('✅ updateBusinessTypeOptionsFromPrediction works!');
+                notifyChatFromMap('✅ businessTypeSelect fix successful!');
+            } catch (error) {
+                console.error('❌ Error in updateBusinessTypeOptionsFromPrediction:', error);
+                notifyChatFromMap('❌ Error: ' + error.message);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

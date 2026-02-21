@@ -1,0 +1,889 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Crowd Heatmap{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+{% endblock %}
+
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-map-location-dot me-2"></i>
+            <span>Heatmap</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'dashboard' %}" class="sidebar-link active">
+                <i class="fas fa-th-large me-3"></i>Dashboard
+            </a>
+            <a href="{% url 'dashboard' %}?auto_map=true" class="sidebar-link">
+                <i class="fas fa-map-marked-alt me-3"></i>Heatmap Analytics
+            </a>
+            <a href="{% url 'dashboard' %}?ai=true" class="sidebar-link">
+                <i class="fas fa-lightbulb me-3"></i>Business Recommendations
+            </a>
+            <a href="#" id="sidebar-startup-form-link" class="sidebar-link">
+                <i class="fas fa-clipboard-list me-3"></i>Startup Form
+            </a>
+            <a href="#" class="sidebar-link">
+                <i class="fas fa-user me-3"></i>Profile
+            </a>
+            <a href="{% url 'logout' %}" class="sidebar-link sidebar-link-logout">
+                <i class="fas fa-sign-out-alt me-3"></i>Logout
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            {% if user.is_authenticated %}
+            <div class="sidebar-user">
+                <span class="sidebar-user-name">{{ user.full_name }}</span>
+                <span class="user-type-badge user-type-{{ user.user_type }}">{{ user.get_user_type_display }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <header class="dashboard-header">
+            <button type="button" id="sidebar-toggle-btn" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="dashboard-title">Dashboard</h1>
+            <div class="dashboard-header-actions">
+                {% if user.is_authenticated %}
+                <span class="user-type-badge user-type-{{ user.user_type }}">{{ user.get_user_type_display }}</span>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Feature Showcase Launchpad -->
+        <div id="dashboard-launchpad" class="feature-showcase-launchpad">
+            <div class="feature-hero">
+                <div class="feature-hero-badge">
+                    <span class="badge-dot"></span>
+                    <span>AI-Powered Platform</span>
+                </div>
+                <h1 class="feature-hero-title">Business Intelligence</h1>
+                <p class="feature-hero-sub">Real-time crowd analytics, business intelligence, and location insights —
+                    all in one platform.</p>
+                <div class="feature-cta-row">
+                    <button class="btn-feature-primary" id="btn-show-map">
+                        <i class="fas fa-map-marked-alt"></i> Launch Live Map
+                    </button>
+                    <button class="btn-feature-outline" id="btn-show-ai-recommender">
+                        <i class="fas fa-brain"></i> AI Recommender
+                    </button>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <!-- Feature 1 -->
+                <div class="feature-tile tile-heatmap">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-fire-alt"></i></div>
+                    <h3>Live Heatmap</h3>
+                    <p>Visualize real-time crowd density across any area with dynamic colour-coded heat overlays — red
+                        for high, orange for moderate, green for low.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> 5km radius scan</li>
+                        <li><i class="fas fa-check"></i> Sector-level intensity</li>
+                        <li><i class="fas fa-check"></i> Live POI density</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-map-2">Launch <i class="fas fa-arrow-right"></i></button>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-tile tile-ai">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-brain"></i></div>
+                    <h3>AI Business Recommender</h3>
+                    <p>Submit your startup criteria and receive precision-matched business location recommendations with
+                        orange marker pinpoints placed directly inside the right crowd zone.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> Business type matching</li>
+                        <li><i class="fas fa-check"></i> Crowd-based targeting</li>
+                        <li><i class="fas fa-check"></i> Orange marker precision</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-ai-recommender-2">Explore <i
+                            class="fas fa-arrow-right"></i></button>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-tile tile-revenue">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>Revenue Intelligence</h3>
+                    <p>Predict estimated monthly and daily revenue for any business type in any neighbourhood using real
+                        footfall data and custom scoring models.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> Daily & monthly estimates</li>
+                        <li><i class="fas fa-check"></i> Potential score (0–100)</li>
+                        <li><i class="fas fa-check"></i> Business health grade</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-flashcards">View <i
+                            class="fas fa-arrow-right"></i></button>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-tile tile-feasibility">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <h3>Feasibility Engine</h3>
+                    <p>Validate your business idea against location-specific crowd intensity. Know before you invest
+                        whether your chosen area is viable for your business type.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> Location viability score</li>
+                        <li><i class="fas fa-check"></i> Crowd compatibility check</li>
+                        <li><i class="fas fa-check"></i> Risk assessment</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-feasibility">Analyze <i
+                            class="fas fa-arrow-right"></i></button>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-tile tile-places">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-map-pin"></i></div>
+                    <h3>Popular Places Radar</h3>
+                    <p>Discover thriving businesses within 5km with a visual radius scan. See crowd timing, best visit
+                        windows, and routing paths to each POI on the map.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> 5km radar scan</li>
+                        <li><i class="fas fa-check"></i> Best time windows</li>
+                        <li><i class="fas fa-check"></i> Dijkstra routing</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-map-3">Scan <i class="fas fa-arrow-right"></i></button>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-tile tile-startup">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-rocket"></i></div>
+                    <h3>Startup Form</h3>
+                    <p>Fill in your business details and instantly receive a map redirect showing your ideal locations
+                        as orange markers overlaid onto heatmap intensity zones.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> Auto map redirect</li>
+                        <li><i class="fas fa-check"></i> Orange marker placement</li>
+                        <li><i class="fas fa-check"></i> Intensity zone overlay</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-startup-form-from-launchpad">Start <i
+                            class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Map Overlay (Hidden by default, emerges on click) -->
+        <div id="dynamic-map-container" class="dynamic-map-container d-none">
+            <div class="dynamic-map-header">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-back-dashboard" id="btn-back-to-dashboard">
+                        <i class="fas fa-arrow-left me-2"></i> Dashboard
+                    </button>
+                    <h2 class="ms-3 mb-0 h5">Live Crowd Heatmap</h2>
+                </div>
+            </div>
+
+            <!-- Floating Search Bar on Map -->
+            <div class="search-overlay-compact floating-map-search">
+                <div class="position-relative" style="flex:1;">
+                    <input type="text" id="dashboard-location-search" class="form-control" placeholder="Search areas..."
+                        autocomplete="off">
+                    <div id="dashboard-search-suggestions" class="search-suggestions-dropdown"></div>
+                </div>
+                <button class="btn btn-primary-blue" id="dashboard-search-btn">Search</button>
+                <div class="map-border-controls ms-2 d-flex gap-2">
+                    <button type="button" class="btn btn-map-control" id="dashboard-find-location-btn"
+                        title="Find My Location">
+                        <i class="fas fa-location-crosshairs"></i>
+                    </button>
+                    <button type="button" class="btn btn-map-control" id="dashboard-popular-places-btn"
+                        title="Popular Places (5km)">
+                        <i class="fas fa-bullseye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="dashboard-map" class="dashboard-map-viewport"></div>
+
+            <div class="dynamic-map-footer">
+                <div class="legend-compact">
+                    <span class="badge intensity-low"><span class="dot"></span> Low</span>
+                    <span class="badge intensity-medium"><span class="dot"></span> Medium</span>
+                    <span class="badge intensity-high"><span class="dot"></span> High</span>
+                </div>
+                <!-- REVENUE PREDICTION DISPLAY -->
+                <div id="revenue-prediction-display" class="revenue-prediction-display d-none">
+                    <div class="revenue-item">
+                        <span class="revenue-label">Crowd Score</span>
+                        <span id="crowd-score-value" class="revenue-value">--</span>
+                    </div>
+                    <div class="revenue-item">
+                        <span class="revenue-label">Est. Monthly Revenue</span>
+                        <span id="revenue-value" class="revenue-value">₹--</span>
+                    </div>
+                </div>
+                <div id="map-status" class="map-status">Map Ready</div>
+            </div>
+        </div>
+
+        <!-- NEW: Analytics Section Below Map -->
+        <div id="dashboard-analytics-section" class="dashboard-analytics-section d-none mt-4">
+            <div class="row g-4">
+                <!-- Popular Places Column -->
+                <div class="col-12">
+                    <div id="popular-places-panel"
+                        class="dashboard-analytics-panel static-panel popular-matrix-panel d-none">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-list-ul me-2"></i> Popular Places</h3>
+                            <button class="btn-close-panel" id="close-popular-places"><i
+                                    class="fas fa-times"></i></button>
+                        </div>
+                        <div class="panel-content scrollable">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <p class="text-muted mb-0 small">
+                                    Top 16 businesses in a detailed 4x4 flashcard matrix.
+                                </p>
+                                <span class="badge bg-dark-subtle text-light border">4x4 Matrix</span>
+                            </div>
+                            <div id="popular-places-flashcards" class="flashcards-wrapper">
+                                <div class="text-center text-muted p-3">
+                                    <p class="mb-0">Click the popular places button to generate matrix flashcards.</p>
+                                </div>
+                            </div>
+                            <div id="popular-places-list" class="d-none"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Intelligence Column -->
+                <div class="col-12">
+                    <div id="business-intelligence-panel"
+                        class="dashboard-analytics-panel intelligence-panel static-panel d-none">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-lightbulb me-2"></i> Business Intelligence</h3>
+                            <button class="btn-close-panel" id="close-intelligence-panel"><i
+                                    class="fas fa-times"></i></button>
+                        </div>
+                        <div class="panel-content scrollable">
+                            <!-- Custom Tabs for Dashboard -->
+                            <ul class="nav nav-pills dashboard-tabs mb-3" id="dashIntelTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="dash-recs-tab" data-bs-toggle="pill"
+                                        data-bs-target="#dash-recs" type="button" role="tab">Top Recs</button>
+                                </li>
+
+                            </ul>
+                            <div class="tab-content" id="dashIntelContent">
+                                <div class="tab-pane fade show active" id="dash-recs" role="tabpanel">
+                                    <div class="futuristic-analytics-dashboard">
+                                        <!-- Header with animated gradient -->
+                                        <div class="analytics-header">
+                                            <div class="header-glow"></div>
+                                            <h3 class="analytics-title">
+                                                <span class="title-text">Revenue Intelligence</span>
+                                                <div class="title-pulse"></div>
+                                            </h3>
+                                            <div class="live-indicator">
+                                                <span class="live-dot"></span>
+                                                <span class="live-text">LIVE</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Chart Toggles -->
+                                        <div class="chart-controls">
+                                            <button class="chart-toggle active" data-chart="monthly">
+                                                <i class="fas fa-calendar-alt"></i>
+                                                <span>Monthly</span>
+                                            </button>
+                                            <button class="chart-toggle" data-chart="daily">
+                                                <i class="fas fa-chart-line"></i>
+                                                <span>Daily</span>
+                                            </button>
+                                            <button class="chart-toggle" data-chart="total">
+                                                <i class="fas fa-dollar-sign"></i>
+                                                <span>Total</span>
+                                            </button>
+                                            <button class="chart-toggle" data-chart="live">
+                                                <i class="fas fa-broadcast-tower"></i>
+                                                <span>Live</span>
+                                            </button>
+                                        </div>
+
+                                        <!-- Charts Grid -->
+                                        <div class="charts-grid">
+                                            <!-- Monthly Revenue Chart -->
+                                            <div class="chart-card active" id="monthly-chart-card">
+                                                <div class="card-glass">
+                                                    <div class="card-header">
+                                                        <div class="card-title">
+                                                            <i class="fas fa-calendar-alt"></i>
+                                                            <h4>Monthly Revenue</h4>
+                                                        </div>
+                                                        <div class="card-value">
+                                                            <span class="current-value">₹0</span>
+                                                            <span class="vs-text">vs</span>
+                                                            <span class="avg-value">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="chart-container">
+                                                        <canvas id="monthlyRevenueChart"></canvas>
+                                                    </div>
+                                                    <div class="card-stats">
+                                                        <div class="stat-item">
+                                                            <span class="stat-label">Growth</span>
+                                                            <span class="stat-value positive">+0%</span>
+                                                        </div>
+                                                        <div class="stat-item">
+                                                            <span class="stat-label">Peak</span>
+                                                            <span class="stat-value">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Daily Revenue Chart -->
+                                            <div class="chart-card" id="daily-chart-card">
+                                                <div class="card-glass">
+                                                    <div class="card-header">
+                                                        <div class="card-title">
+                                                            <i class="fas fa-chart-line"></i>
+                                                            <h4>Daily Revenue</h4>
+                                                        </div>
+                                                        <div class="card-value">
+                                                            <span class="current-value">₹0</span>
+                                                            <span class="vs-text">vs</span>
+                                                            <span class="avg-value">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="chart-container">
+                                                        <canvas id="dailyRevenueChart"></canvas>
+                                                    </div>
+                                                    <div class="card-stats">
+                                                        <div class="stat-item">
+                                                            <span class="stat-label">Today</span>
+                                                            <span class="stat-value positive">+0%</span>
+                                                        </div>
+                                                        <div class="stat-item">
+                                                            <span class="stat-label">Avg</span>
+                                                            <span class="stat-value">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Total Revenue Chart -->
+                                            <div class="chart-card" id="total-chart-card">
+                                                <div class="card-glass">
+                                                    <div class="card-header">
+                                                        <div class="card-title">
+                                                            <i class="fas fa-dollar-sign"></i>
+                                                            <h4>Total Revenue</h4>
+                                                        </div>
+                                                        <div class="card-value">
+                                                            <span class="current-value">₹0</span>
+                                                            <span class="vs-text">vs</span>
+                                                            <span class="avg-value">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="chart-container">
+                                                        <canvas id="totalRevenueChart"></canvas>
+                                                    </div>
+                                                    <div class="card-stats">
+                                                        <div class="stat-item">
+                                                            <span class="stat-label">Total</span>
+                                                            <span class="stat-value">₹0</span>
+                                                        </div>
+                                                        <div class="stat-item">
+                                                            <span class="stat-label">Target</span>
+                                                            <span class="stat-value">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Live Revenue Chart -->
+                                            <div class="chart-card" id="live-chart-card">
+                                                <div class="card-glass">
+                                                    <div class="card-header">
+                                                        <div class="card-title">
+                                                            <i class="fas fa-broadcast-tower"></i>
+                                                            <h4>Live Revenue</h4>
+                                                        </div>
+                                                        <div class="card-value">
+                                                            <span class="current-value">₹0</span>
+                                                            <span class="vs-text">vs</span>
+                                                            <span class="avg-value">₹0</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="chart-container">
+                                                        <canvas id="liveRevenueChart"></canvas>
+                                                    </div>
+                                                    <div class="card-stats">
+                                                        <div class="stat-item">
+                                                            <span class="stat-label">Live</span>
+                                                            <span class="stat-value pulse">₹0</span>
+                                                        </div>
+                                                        <div class="stat-item">
+                                                            <span class="stat-label">Rate</span>
+                                                            <span class="stat-value">₹0/hr</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Loading Overlay -->
+                                        <div class="loading-overlay" id="analytics-loading">
+                                            <div class="loading-spinner">
+                                                <div class="spinner-ring"></div>
+                                                <div class="spinner-ring"></div>
+                                                <div class="spinner-ring"></div>
+                                            </div>
+                                            <p class="loading-text">Analyzing revenue data...</p>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="dash-ai" role="tabpanel">
+                                        <div id="business-suggestion-content">
+                                            <div class="text-center text-muted p-3">
+                                                <p>Select a location on the map.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Startup Form Section (Hidden by default) -->
+            <div id="dashboard-startup-form-section" class="dashboard-startup-form-section d-none mt-4">
+                <div class="dashboard-form-panel">
+                    <div class="panel-header">
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-back-dashboard" id="btn-back-to-launchpad-from-form">
+                                <i class="fas fa-arrow-left me-2"></i> Dashboard
+                            </button>
+                            <h2 class="ms-3 mb-0 h5"><i class="fas fa-clipboard-list me-2"></i>Business Information</h2>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <p class="text-muted mb-4">Fill in your details to check feasibility and find the ideal
+                            location.</p>
+
+                        <form id="dashboard-business-form">
+                            {% csrf_token %}
+                            <!-- Name & Email row -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="dashboard-id_name" class="form-label">Your Name</label>
+                                    <input type="text" id="dashboard-id_name" name="name" class="form-control"
+                                        placeholder="Full name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="dashboard-id_email" class="form-label">Email</label>
+                                    <input type="email" id="dashboard-id_email" name="email" class="form-control"
+                                        placeholder="you@example.com" required>
+                                </div>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="mb-3">
+                                <label for="dashboard-id_phone" class="form-label"><i
+                                        class="fas fa-phone me-1 text-success"></i>Phone</label>
+                                <input type="text" id="dashboard-id_phone" name="phone" class="form-control"
+                                    placeholder="Phone number" required>
+                            </div>
+
+                            <!-- Business Location -->
+                            <div class="mb-3 position-relative">
+                                <label for="dashboard-form-location-search" class="form-label"><i
+                                        class="fas fa-map-marker-alt me-1 text-success"></i>Business Location</label>
+                                <input type="text" id="dashboard-form-location-search" class="form-control"
+                                    placeholder="Search area to load business types...">
+                                <div id="dashboard-form-location-suggestions" class="suggestions-list"></div>
+                            </div>
+
+                            <!-- Business Type DROPDOWN -->
+                            <div class="mb-3">
+                                <label for="dashboard-id_business_type_dropdown" class="form-label"><i
+                                        class="fas fa-store me-1 text-success"></i>Business Type to Start</label>
+                                <select id="dashboard-id_business_type_dropdown" name="business_type"
+                                    class="form-select" required>
+                                    <option value="">-- Search a location first --</option>
+                                </select>
+                                <small id="dashboard-form-flow-hint" class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>Select a location above to load recommended
+                                    business types.
+                                </small>
+                            </div>
+
+                            <!-- Desired Crowd Intensity -->
+                            <div class="mb-3">
+                                <label for="dashboard-id_crowd_intensity" class="form-label"><i
+                                        class="fas fa-users me-1 text-success"></i>Desired Crowd Intensity</label>
+                                <select id="dashboard-id_crowd_intensity" name="crowd_intensity" class="form-select"
+                                    required>
+                                    <option value="">-- Select intensity --</option>
+                                    <option value="low">Low — Quiet, few visitors</option>
+                                    <option value="medium">Moderate — Steady foot traffic</option>
+                                    <option value="high">High — Busy, high footfall</option>
+                                </select>
+                            </div>
+
+                            <!-- Hidden fields -->
+                            <input type="hidden" id="dashboard-id_latitude" name="latitude">
+                            <input type="hidden" id="dashboard-id_longitude" name="longitude">
+                            <input type="hidden" id="dashboard-id_recommended_business" name="recommended_business">
+
+                            <!-- Feasibility Result Banner -->
+                            <div id="dashboard-feasibility-result-banner" class="alert d-none mb-3" role="alert">
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" id="dashboard-submit-business-form-btn"
+                                    class="btn btn-success flex-fill">
+                                    <i class="fas fa-check-circle me-2"></i>Check Feasibility & Submit
+                                </button>
+                                <button type="button" id="dashboard-reset-business-form-btn"
+                                    class="btn btn-outline-secondary">
+                                    <i class="fas fa-redo me-1"></i>Reset
+                                </button>
+                            </div>
+                        </form>
+                        <div id="dashboard-form-message" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Recommendations Section -->
+            <div class="business-recommendations-section d-none">
+                <div class="recommendations-header">
+                    <h3 class="recommendations-title">
+                        <i class="fas fa-lightbulb"></i>
+                        Top 5 Business Recommendations
+                    </h3>
+                    <div class="recommendations-subtitle">Based on location analysis and market trends</div>
+                </div>
+
+                <div class="business-flashcards-container">
+                    <!-- Business 1: Urban Cafe Flashcard -->
+                    <div class="business-flashcard">
+                        <div class="flashcard-header">
+                            <div class="flashcard-icon">
+                                <i class="fas fa-coffee"></i>
+                            </div>
+                            <div class="flashcard-title">
+                                <h4>Urban Cafe</h4>
+                                <div class="flashcard-revenue">
+                                    <span class="revenue-label">Starting Revenue</span>
+                                    <span class="revenue-amount">₹45,000/month</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flashcard-content">
+                            <div class="flashcard-facts">
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>High foot traffic area</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Low startup costs</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Morning & evening peak hours</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-star"></i>
+                                    <span>Premium location available</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Business 2: Fitness Center Flashcard -->
+                    <div class="business-flashcard">
+                        <div class="flashcard-header">
+                            <div class="flashcard-icon">
+                                <i class="fas fa-dumbbell"></i>
+                            </div>
+                            <div class="flashcard-title">
+                                <h4>Fitness Center</h4>
+                                <div class="flashcard-revenue">
+                                    <span class="revenue-label">Starting Revenue</span>
+                                    <span class="revenue-amount">₹62,000/month</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flashcard-content">
+                            <div class="flashcard-facts">
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Health-conscious demographic</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Multiple revenue streams</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Low competition nearby</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-star"></i>
+                                    <span>High growth potential</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Business 3: Co-working Space Flashcard -->
+                    <div class="business-flashcard">
+                        <div class="flashcard-header">
+                            <div class="flashcard-icon">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <div class="flashcard-title">
+                                <h4>Co-working Space</h4>
+                                <div class="flashcard-revenue">
+                                    <span class="revenue-label">Starting Revenue</span>
+                                    <span class="revenue-amount">₹38,000/month</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flashcard-content">
+                            <div class="flashcard-facts">
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Remote work trend</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Flexible pricing model</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Corporate partnerships</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-star"></i>
+                                    <span>Prime location</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Business 4: Organic Restaurant Flashcard -->
+                    <div class="business-flashcard">
+                        <div class="flashcard-header">
+                            <div class="flashcard-icon">
+                                <i class="fas fa-utensils"></i>
+                            </div>
+                            <div class="flashcard-title">
+                                <h4>Organic Restaurant</h4>
+                                <div class="flashcard-revenue">
+                                    <span class="revenue-label">Starting Revenue</span>
+                                    <span class="revenue-amount">₹55,000/month</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flashcard-content">
+                            <div class="flashcard-facts">
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Health-conscious market</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Local supplier network</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Lunch & dinner peaks</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-star"></i>
+                                    <span>High profit margins</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Business 5: Tech Repair Store Flashcard -->
+                    <div class="business-flashcard">
+                        <div class="flashcard-header">
+                            <div class="flashcard-icon">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <div class="flashcard-title">
+                                <h4>Tech Repair Store</h4>
+                                <div class="flashcard-revenue">
+                                    <span class="revenue-label">Starting Revenue</span>
+                                    <span class="revenue-amount">₹42,000/month</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flashcard-content">
+                            <div class="flashcard-facts">
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>High demand area</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Multiple service lines</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Low inventory costs</span>
+                                </div>
+                                <div class="fact-item">
+                                    <i class="fas fa-star"></i>
+                                    <span>Commercial zone benefits</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Startup Form Section (Hidden by default) -->
+            <div id="dashboard-startup-form-section" class="dashboard-startup-form-section d-none mt-4">
+                <div class="dashboard-form-panel">
+                    <div class="panel-header">
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-back-dashboard" id="btn-back-to-launchpad-from-form">
+                                <i class="fas fa-arrow-left me-2"></i> Dashboard
+                            </button>
+                            <h2 class="ms-3 mb-0 h5"><i class="fas fa-clipboard-list me-2"></i>Business Information</h2>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <p class="text-muted mb-4">Fill in your details to check feasibility and find the ideal
+                            location.</p>
+
+                        <form id="dashboard-business-form">
+                            {% csrf_token %}
+                            <!-- Name & Email row -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="dashboard-id_name" class="form-label">Your Name</label>
+                                    <input type="text" id="dashboard-id_name" name="name" class="form-control"
+                                        placeholder="Full name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="dashboard-id_email" class="form-label">Email</label>
+                                    <input type="email" id="dashboard-id_email" name="email" class="form-control"
+                                        placeholder="you@example.com" required>
+                                </div>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="mb-3">
+                                <label for="dashboard-id_phone" class="form-label"><i
+                                        class="fas fa-phone me-1 text-success"></i>Phone</label>
+                                <input type="text" id="dashboard-id_phone" name="phone" class="form-control"
+                                    placeholder="Phone number" required>
+                            </div>
+
+                            <!-- Business Location -->
+                            <div class="mb-3 position-relative">
+                                <label for="dashboard-form-location-search" class="form-label"><i
+                                        class="fas fa-map-marker-alt me-1 text-success"></i>Business Location</label>
+                                <input type="text" id="dashboard-form-location-search" class="form-control"
+                                    placeholder="Search area to load business types...">
+                                <div id="dashboard-form-location-suggestions" class="suggestions-list"></div>
+                            </div>
+
+                            <!-- Business Type DROPDOWN -->
+                            <div class="mb-3">
+                                <label for="dashboard-id_business_type_dropdown" class="form-label"><i
+                                        class="fas fa-store me-1 text-success"></i>Business Type to Start</label>
+                                <select id="dashboard-id_business_type_dropdown" name="business_type"
+                                    class="form-select" required>
+                                    <option value="">-- Search a location first --</option>
+                                </select>
+                                <small id="dashboard-form-flow-hint" class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>Select a location above to load recommended
+                                    business types.
+                                </small>
+                            </div>
+
+                            <!-- Desired Crowd Intensity -->
+                            <div class="mb-3">
+                                <label for="dashboard-id_crowd_intensity" class="form-label"><i
+                                        class="fas fa-users me-1 text-success"></i>Desired Crowd Intensity</label>
+                                <select id="dashboard-id_crowd_intensity" name="crowd_intensity" class="form-select"
+                                    required>
+                                    <option value="">-- Select intensity --</option>
+                                    <option value="low">Low &mdash; Quiet, few visitors</option>
+                                    <option value="medium">Moderate &mdash; Steady foot traffic</option>
+                                    <option value="high">High &mdash; Busy, high footfall</option>
+                                </select>
+                            </div>
+
+                            <!-- Hidden fields -->
+                            <input type="hidden" id="dashboard-id_latitude" name="latitude">
+                            <input type="hidden" id="dashboard-id_longitude" name="longitude">
+                            <input type="hidden" id="dashboard-id_recommended_business" name="recommended_business">
+
+                            <!-- Feasibility Result Banner -->
+                            <div id="dashboard-feasibility-result-banner" class="alert d-none mb-3" role="alert">
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" id="dashboard-submit-business-form-btn"
+                                    class="btn btn-success flex-fill">
+                                    <i class="fas fa-check-circle me-2"></i>Check Feasibility & Submit
+                                </button>
+                                <button type="button" id="dashboard-reset-business-form-btn"
+                                    class="btn btn-outline-secondary">
+                                    <i class="fas fa-redo me-1"></i>Reset
+                                </button>
+                            </div>
+                        </form>
+                        <div id="dashboard-form-message" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden elements for main.js compatibility -->
+            <div class="d-none">
+                <div id="map"></div> <!-- Leaflet needs target #map for main.js if not overridden -->
+                <input type="text" id="location-search">
+                <div id="location-suggestions"></div>
+                <button id="search-btn"></button>
+                <button id="find-location-btn"></button>
+                <div id="location-error-msg"></div>
+                <div id="accuracy-meter"></div>
+                <div id="accuracy-value"></div>
+                <input type="hidden" id="id_latitude">
+                <input type="hidden" id="id_longitude">
+                <select id="id_crowd_intensity" class="d-none"></select>
+                <input type="hidden" id="id_business_type">
+                <select id="id_business_type_select" class="d-none"></select>
+                <input type="hidden" id="id_recommended_business">
+                <div id="heatmap-toast" class="heatmap-toast"></div>
+                <div id="popular-places-close"></div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block extra_js %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="{% static 'js/dashboard-form.js' %}"></script>
+    <script src="{% static 'js/analytics-dashboard.js' %}"></script>
+    {% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Business Recommendations - Crowd Heatmap{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Sidebar (Same as Dashboard) -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-map-location-dot me-2"></i>
+            <span>Heatmap</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'dashboard' %}" class="sidebar-link">
+                <i class="fas fa-th-large me-3"></i>Dashboard
+            </a>
+            <a href="{% url 'dashboard' %}?show_map=true" class="sidebar-link">
+                <i class="fas fa-map-marked-alt me-3"></i>Heatmap Analytics
+            </a>
+            <a href="{% url 'dashboard' %}?ai=true" class="sidebar-link active">
+                <i class="fas fa-lightbulb me-3"></i>Business Recommendations
+            </a>
+            <a href="#" id="form-trigger-btn" class="sidebar-link">
+                <i class="fas fa-file-invoice me-3"></i>Business Form
+            </a>
+            <a href="#" class="sidebar-link">
+                <i class="fas fa-user me-3"></i>Profile
+            </a>
+            <a href="{% url 'logout' %}" class="sidebar-link sidebar-link-logout">
+                <i class="fas fa-sign-out-alt me-3"></i>Logout
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            {% if user.is_authenticated %}
+            <div class="sidebar-user">
+                <span class="sidebar-user-name">{{ user.full_name }}</span>
+                <span class="user-type-badge user-type-{{ user.user_type }}">{{ user.get_user_type_display }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <header class="dashboard-header">
+            <button type="button" id="sidebar-toggle-btn" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="dashboard-title">Business Intelligence</h1>
+            <div class="dashboard-header-actions">
+                {% if user.is_authenticated %}
+                <span class="user-type-badge user-type-{{ user.user_type }}">{{ user.get_user_type_display }}</span>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Business Intelligence Panel -->
+        <div class="dashboard-analytics-section mt-1">
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-10">
+                    <div id="business-intelligence-panel"
+                        class="dashboard-analytics-panel intelligence-panel static-panel w-100">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-lightbulb me-2"></i> Strategic Recommendations</h3>
+                        </div>
+                        <div class="panel-content scrollable" style="max-height: 80vh;">
+                            <!-- Custom Tabs for Recommendations Page -->
+                            <ul class="nav nav-pills dashboard-tabs mb-3" id="dashIntelTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="dash-recs-tab" data-bs-toggle="pill"
+                                        data-bs-target="#dash-recs" type="button" role="tab">Top
+                                        Recommendations</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="dash-ai-tab" data-bs-toggle="pill"
+                                        data-bs-target="#dash-ai" type="button" role="tab">AI Strategy Guide</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="dashIntelContent">
+                                <div class="tab-pane fade show active" id="dash-recs" role="tabpanel">
+                                    <div id="business-recommendations-row" class="row g-3">
+                                        <div class="text-center text-muted p-5">
+                                            <i class="fas fa-map-marker-alt fa-3x mb-3 opacity-50"></i>
+                                            <p>No location selected. Go to the dashboard map to analyze an area first.
+                                            </p>
+                                            <a href="{% url 'dashboard' %}" class="btn btn-primary-blue mt-3">Go to
+                                                Map</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="dash-ai" role="tabpanel">
+                                    <div id="business-suggestion-content">
+                                        <div class="text-center text-muted p-5">
+                                            <i class="fas fa-robot fa-3x mb-3 opacity-50"></i>
+                                            <p>AI Insights will appear here after location analysis.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden elements for main.js compatibility -->
+        <div class="d-none">
+            <input type="hidden" id="id_latitude">
+            <input type="hidden" id="id_longitude">
+            <div id="heatmap-toast" class="heatmap-toast"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

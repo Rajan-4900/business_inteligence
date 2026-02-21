@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Crowd Heatmap{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+{% endblock %}
+
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-map-location-dot me-2"></i>
+            <span>Heatmap</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'dashboard' %}" class="sidebar-link active">
+                <i class="fas fa-th-large me-3"></i>Dashboard
+            </a>
+            <a href="{% url 'home' %}" class="sidebar-link">
+                <i class="fas fa-map-marked-alt me-3"></i>Heatmap Analytics
+            </a>
+            <a href="{% url 'home' %}#business-recommendations-section" class="sidebar-link">
+                <i class="fas fa-lightbulb me-3"></i>Business Recommendations
+            </a>
+            <a href="#" class="sidebar-link">
+                <i class="fas fa-user me-3"></i>Profile
+            </a>
+            <a href="{% url 'logout' %}" class="sidebar-link sidebar-link-logout">
+                <i class="fas fa-sign-out-alt me-3"></i>Logout
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            {% if user.is_authenticated %}
+            <div class="sidebar-user">
+                <span class="sidebar-user-name">{{ user.full_name }}</span>
+                <span class="user-type-badge user-type-{{ user.user_type }}">{{ user.get_user_type_display }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <header class="dashboard-header">
+            <button type="button" id="sidebar-toggle-btn" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="dashboard-title">Dashboard</h1>
+            <div class="dashboard-header-actions">
+                {% if user.is_authenticated %}
+                <span class="user-type-badge user-type-{{ user.user_type }}">{{ user.get_user_type_display }}</span>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Service Launchpad (Options) -->
+        <div id="dashboard-launchpad" class="dashboard-launchpad">
+            <h2 class="dashboard-subtitle text-center mb-4">Select a Service to Begin</h2>
+            <div class="dashboard-launchpad-grid">
+                <!-- Live Heatmap Card (Triggers Map) -->
+                <div class="launchpad-card" id="btn-show-map">
+                    <div class="launchpad-icon icon-heatmap">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div class="launchpad-content">
+                        <h3>Live Heatmap</h3>
+                        <p>Visualize real-time crowd density and hotspots.</p>
+                    </div>
+                    <div class="launchpad-action">Launch <i class="fas fa-arrow-right ms-2"></i></div>
+                </div>
+
+                <!-- AI Recommender Card -->
+                <div class="launchpad-card" id="btn-show-ai-recommender">
+                    <div class="launchpad-icon icon-ai">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="launchpad-content">
+                        <h3>AI Recommender</h3>
+                        <p>Get data-driven business type suggestions.</p>
+                    </div>
+                    <div class="launchpad-action">Explore <i class="fas fa-arrow-right ms-2"></i></div>
+                </div>
+
+                <!-- Market Analytics Card -->
+                <div class="launchpad-card">
+                    <div class="launchpad-icon icon-analytics">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="launchpad-content">
+                        <h3>Market Metrics</h3>
+                        <p>Analyze footfall trends and area demographics.</p>
+                    </div>
+                    <div class="launchpad-action">View <i class="fas fa-arrow-right ms-2"></i></div>
+                </div>
+
+                <!-- Feasibility Check Card -->
+                <div class="launchpad-card" id="btn-show-feasibility">
+                    <div class="launchpad-icon icon-check">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="launchpad-content">
+                        <h3>Feasibility Check</h3>
+                        <p>Validate your business idea for a location.</p>
+                    </div>
+                    <div class="launchpad-action">Analyze <i class="fas fa-arrow-right ms-2"></i></div>
+                </div>
+                <!-- Business Flashcards Card -->
+                <div class="launchpad-card" id="btn-show-flashcards">
+                    <div class="launchpad-icon icon-flashcards">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="launchpad-content">
+                        <h3>Business Flashcards</h3>
+                        <p>Quick intelligence for top business opportunities.</p>
+                    </div>
+                    <div class="launchpad-action">Open <i class="fas fa-arrow-right ms-2"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Map Overlay (Hidden by default, emerges on click) -->
+        <div id="dynamic-map-container" class="dynamic-map-container d-none">
+            <div class="dynamic-map-header">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-back-dashboard" id="btn-back-to-dashboard">
+                        <i class="fas fa-arrow-left me-2"></i> Dashboard
+                    </button>
+                    <h2 class="ms-3 mb-0 h5">Live Crowd Heatmap</h2>
+                </div>
+            </div>
+
+            <!-- Floating Search Bar on Map -->
+            <div class="search-overlay-compact floating-map-search">
+                <div class="position-relative" style="flex:1;">
+                    <input type="text" id="dashboard-location-search" class="form-control" placeholder="Search areas..."
+                        autocomplete="off">
+                    <div id="dashboard-search-suggestions" class="search-suggestions-dropdown"></div>
+                </div>
+                <button class="btn btn-primary-blue" id="dashboard-search-btn">Search</button>
+                <div class="map-border-controls ms-2 d-flex gap-2">
+                    <button type="button" class="btn btn-map-control" id="dashboard-find-location-btn"
+                        title="Find My Location">
+                        <i class="fas fa-location-crosshairs"></i>
+                    </button>
+                    <button type="button" class="btn btn-map-control" id="dashboard-popular-places-btn"
+                        title="Popular Places (5km)">
+                        <i class="fas fa-bullseye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="dashboard-map" class="dashboard-map-viewport"></div>
+
+            <div class="dynamic-map-footer">
+                <div class="legend-compact">
+                    <span class="badge intensity-low"><span class="dot"></span> Low</span>
+                    <span class="badge intensity-medium"><span class="dot"></span> Medium</span>
+                    <span class="badge intensity-high"><span class="dot"></span> High</span>
+                </div>
+                <!-- REVENUE PREDICTION DISPLAY -->
+                <div id="revenue-prediction-display" class="revenue-prediction-display d-none">
+                    <div class="revenue-item">
+                        <span class="revenue-label">Crowd Score</span>
+                        <span id="crowd-score-value" class="revenue-value">--</span>
+                    </div>
+                    <div class="revenue-item">
+                        <span class="revenue-label">Est. Monthly Revenue</span>
+                        <span id="revenue-value" class="revenue-value">₹--</span>
+                    </div>
+                </div>
+                <div id="map-status" class="map-status">Map Ready</div>
+            </div>
+        </div>
+
+        <!-- NEW: Analytics Section Below Map -->
+        <div id="dashboard-analytics-section" class="dashboard-analytics-section d-none mt-4">
+            <div class="row g-4">
+                <!-- Popular Places Column -->
+                <div class="col-lg-5">
+                    <div id="popular-places-panel" class="dashboard-analytics-panel static-panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-list-ul me-2"></i> Popular Places</h3>
+                            <button class="btn-close-panel" id="close-popular-places"><i
+                                    class="fas fa-times"></i></button>
+                        </div>
+                        <div id="popular-places-list" class="panel-content scrollable">
+                            <div class="text-center text-muted p-3">
+                                <p>Click the search icon to see popular places nearby.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Intelligence Column -->
+                <div class="col-lg-7">
+                    <div id="business-intelligence-panel"
+                        class="dashboard-analytics-panel intelligence-panel static-panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-lightbulb me-2"></i> Business Intelligence</h3>
+                            <button class="btn-close-panel" id="close-intelligence-panel"><i
+                                    class="fas fa-times"></i></button>
+                        </div>
+                        <div class="panel-content scrollable">
+                            <!-- Custom Tabs for Dashboard -->
+                            <ul class="nav nav-pills dashboard-tabs mb-3" id="dashIntelTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="dash-recs-tab" data-bs-toggle="pill"
+                                        data-bs-target="#dash-recs" type="button" role="tab">Top Recs</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="dash-ai-tab" data-bs-toggle="pill"
+                                        data-bs-target="#dash-ai" type="button" role="tab">AI Strategy</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="dashIntelContent">
+                                <div class="tab-pane fade show active" id="dash-recs" role="tabpanel">
+                                    <div id="business-recommendations-row" class="row g-3">
+                                        <div class="text-center text-muted p-3">
+                                            <p>Intelligence data will appear here.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="dash-ai" role="tabpanel">
+                                    <div id="business-suggestion-content">
+                                        <div class="text-center text-muted p-3">
+                                            <p>Select a location on the map.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden elements for main.js compatibility -->
+        <div class="d-none">
+            <div id="map"></div> <!-- Leaflet needs target #map for main.js if not overridden -->
+            <input type="text" id="location-search">
+            <div id="location-suggestions"></div>
+            <button id="search-btn"></button>
+            <button id="find-location-btn"></button>
+            <div id="location-error-msg"></div>
+            <div id="accuracy-meter"></div>
+            <div id="accuracy-value"></div>
+            <input type="hidden" id="id_latitude">
+            <input type="hidden" id="id_longitude">
+            <select id="id_crowd_intensity" class="d-none"></select>
+            <input type="hidden" id="id_business_type">
+            <select id="id_business_type_select" class="d-none"></select>
+            <input type="hidden" id="id_recommended_business">
+            <div id="heatmap-toast" class="heatmap-toast"></div>
+            <div id="popular-places-close"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+{% endblock %}

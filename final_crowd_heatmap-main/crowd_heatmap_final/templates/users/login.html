@@ -1,0 +1,77 @@
+{% extends "users/base_auth.html" %}
+{% load static %}
+
+{% block title %}Log In - Crowd Heatmap{% endblock %}
+
+{% block auth_content %}
+<div class="card shadow-sm border-0">
+    <div class="card-body p-4 p-md-5">
+        <h2 class="mb-4">Log In</h2>
+        <p class="text-muted mb-4">Sign in with your email and password.</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <div class="mb-3">
+                <label for="id_username" class="form-label">Email</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label for="id_password" class="form-label mb-0">Password</label>
+                    <a href="{% url 'password_reset' %}" class="small">Forgot password?</a>
+                </div>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.password.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3 form-check">
+                {{ form.remember_me }}
+                <label class="form-check-label" for="id_remember_me">Remember me</label>
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">Log In</button>
+            </div>
+        </form>
+
+        <hr class="my-4">
+        <p class="text-center text-muted mb-0">
+            Don't have an account? <a href="{% url 'register' %}">Register</a>
+        </p>
+    </div>
+</div>
+<script>
+document.querySelectorAll('.invalid-feedback.d-block').forEach(function(fb) {
+    var input = fb.closest('.mb-3').querySelector('input, select, textarea');
+    if (input) input.classList.add('is-invalid');
+});
+</script>
+{% endblock %}

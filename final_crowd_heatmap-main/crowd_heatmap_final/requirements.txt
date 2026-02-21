@@ -1,0 +1,12 @@
+django==6.0.1
+channels==4.1.0
+daphne==4.1.2
+opencv-python==4.10.0.84
+numpy
+requests
+pandas
+scikit-learn
+google-generativeai
+python-dotenv
+
+matplotlib

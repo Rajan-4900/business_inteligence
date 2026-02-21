@@ -1,0 +1,476 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Business Intelligence{% endblock %}</title>
+
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="base-layout">
+    <div id="bg-animation"></div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-base">
+        <div class="container-fluid container-custom">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="fas fa-map-location-dot me-2"></i>
+                <span>Business Intelligence</span>
+            </a>
+            <button class="navbar-toggler navbar-toggler-custom" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <div class="ms-auto d-flex align-items-center gap-3">
+                    {% block navbar_extra %}{% endblock %}
+                    {% if user.is_authenticated %}
+                    <div class="nav-user-dropdown dropdown">
+                        <a class="nav-link nav-user-trigger dropdown-toggle d-flex align-items-center" href="#"
+                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ user.full_name }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-base">
+                            <li><span class="dropdown-item-text text-info small">{{ user.email }}</span></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <a class="btn btn-nav btn-outline" href="{% url 'login' %}">Log In</a>
+                    <a class="btn btn-nav btn-primary" href="{% url 'register' %}">Register</a>
+                    {% endif %}
+
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home me-1"></i>Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'contact_us' %}"><i
+                                    class="fas fa-envelope me-1"></i>Contact Us</a>
+                        </li>
+                        {% if user.is_authenticated %}
+                        <li class="nav-item border-start-custom ps-lg-3">
+                            <a class="nav-link" href="{% url 'dashboard' %}"><i
+                                    class="fas fa-th-large me-1"></i>Dashboard</a>
+                        </li>
+                        {% endif %}
+                        {% block nav_links %}{% endblock %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+    <div class="container-fluid container-custom py-2">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% block footer %}{% endblock %}
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+    {% block extra_js %}{% endblock %}
+    <!-- Custom JS (after extra_js so Leaflet loads first on map pages) -->
+    <script src="{% static 'js/main.js' %}"></script>
+
+    <!-- Three.js (for 3D Globe) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('bg-animation');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // OrbitControls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            // Ultra-Realistic Photorealistic Earth Overhaul
+
+            const textureLoader = new THREE.TextureLoader();
+
+            // 1. High-Fidelity Assets
+            const earthColor = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
+            const earthSpecular = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
+            const earthLights = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png');
+            const cloudTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png');
+
+            // 2. Procedural Starfield (Reverted to previous preferred version)
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsCount = 12000;
+            const posArray = new Float32Array(starsCount * 3);
+            for (let i = 0; i < starsCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 1500;
+            }
+            starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const starsMaterial = new THREE.PointsMaterial({
+                size: 0.8,
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.9,
+                sizeAttenuation: true
+            });
+            const stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
+
+            // 3. Custom Photorealistic Earth Shader
+            const sunDirection = new THREE.Vector3(1, 0.2, 1).normalize();
+
+            const earthVertexShader = `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vSunDirection;
+                varying vec3 vViewPosition;
+
+                uniform vec3 sunDirection;
+
+                void main() {
+                    vUv = uv;
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    vNormal = normalize(normalMatrix * normal);
+                    vSunDirection = normalize(normalMatrix * sunDirection);
+                    vViewPosition = -mvPosition.xyz;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `;
+
+            const earthFragmentShader = `
+                uniform sampler2D dayTexture;
+                uniform sampler2D nightTexture;
+                uniform sampler2D specularMap;
+                
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vSunDirection;
+                varying vec3 vViewPosition;
+
+                void main() {
+                    vec3 viewDir = normalize(vViewPosition);
+                    vec3 normal = normalize(vNormal);
+                    
+                    // 1. Base Surface (Oceans/Continents)
+                    // We use the day texture but at extremely low luminance to give a "moonlit" or "ambient" dark blue feel
+                    vec3 dayColor = texture2D(dayTexture, vUv).rgb;
+                    vec3 surfaceBase = dayColor * vec3(0.02, 0.03, 0.06); 
+                    
+                    // 2. City Lights (Night Texture)
+                    vec3 nightLights = texture2D(nightTexture, vUv).rgb;
+                    
+                    // Bloom/Spread simulation: emphasize light clusters
+                    float lightIntensity = length(nightLights);
+                    vec3 lightColor = nightLights * vec3(1.0, 0.9, 0.7); // Warm sodium color
+                    
+                    // Boost the core and add a soft halo
+                    vec3 glowingLights = lightColor * 4.0 + pow(lightIntensity, 2.0) * 1.5;
+
+                    // 3. Fresnel / Edge Glow
+                    // Light from cities scattering at the horizon
+                    float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+                    vec3 edgeGlow = vec3(0.1, 0.2, 0.5) * fresnel * 0.4;
+
+                    // 4. Final Composition
+                    vec3 finalColor = surfaceBase + glowingLights + edgeGlow;
+
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `;
+
+            const earthShaderMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    dayTexture: { value: earthColor },
+                    nightTexture: { value: earthLights },
+                    specularMap: { value: earthSpecular },
+                    sunDirection: { value: sunDirection }
+                },
+                vertexShader: earthVertexShader,
+                fragmentShader: earthFragmentShader
+            });
+
+            const globeGeometry = new THREE.SphereGeometry(10, 128, 128);
+            const globe = new THREE.Mesh(globeGeometry, earthShaderMaterial);
+            scene.add(globe);
+
+            // 4. Realistic Rayleigh Atmosphere
+            const atmosphereVertexShader = `
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    vViewPosition = -mvPosition.xyz;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `;
+            const atmosphereFragmentShader = `
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+                uniform vec3 sunDirection;
+                
+                void main() {
+                    vec3 viewDir = normalize(vViewPosition);
+                    vec3 normal = normalize(vNormal);
+                    
+                    // Multi-layered Rayleigh scattering approximation
+                    float intensity = pow(0.7 - dot(normal, vec3(0, 0, 1.0)), 6.0);
+                    float edge = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
+                    
+                    // Deep blue inner atmosphere transitioning to a thinner Cyan outer rim
+                    vec3 color1 = vec3(0.1, 0.3, 0.8);
+                    vec3 color2 = vec3(0.2, 0.6, 1.0);
+                    
+                    vec3 finalAtmosphere = mix(color1, color2, edge) * (intensity + edge * 0.5);
+                    
+                    gl_FragColor = vec4(finalAtmosphere, 1.0) * 0.5;
+                }
+            `;
+
+            const atmosphereGeo = new THREE.SphereGeometry(10.5, 128, 128);
+            const atmosphereMat = new THREE.ShaderMaterial({
+                uniforms: { sunDirection: { value: sunDirection } },
+                vertexShader: atmosphereVertexShader,
+                fragmentShader: atmosphereFragmentShader,
+                blending: THREE.AdditiveBlending,
+                side: THREE.BackSide,
+                transparent: true
+            });
+            const atmosphere = new THREE.Mesh(atmosphereGeo, atmosphereMat);
+            scene.add(atmosphere);
+
+            // 5. Cloud Layer
+            const cloudGeo = new THREE.SphereGeometry(10.2, 128, 128);
+            const cloudMat = new THREE.MeshPhongMaterial({
+                map: cloudTexture,
+                transparent: true,
+                opacity: 0.25, // More subtle
+                color: 0x445566, // Dark blue-grey tint
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const clouds = new THREE.Mesh(cloudGeo, cloudMat);
+            scene.add(clouds);
+
+            // 6. Lighting (Required for Clouds, matching sunDirection)
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            sunLight.position.copy(sunDirection).multiplyScalar(100);
+            scene.add(sunLight);
+
+            const ambientLight = new THREE.AmbientLight(0x050510, 0.2);
+            scene.add(ambientLight);
+
+            // Camera Setup
+            camera.position.z = 24;
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Animation
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+
+                const delta = clock.getDelta();
+                globe.rotation.y += 0.00015;
+                clouds.rotation.y += 0.00025;
+                stars.rotation.y += 0.00005;
+
+                // Pulsate stars slightly
+                const time = Date.now() * 0.001;
+                stars.material.opacity = 0.7 + Math.sin(time) * 0.1;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        });
+    </script>
+    {% block extra_body %}{% endblock %}
+
+    <!-- Form Modal -->
+    <div id="form-modal" class="modal">
+        <div class="modal-content"
+            style="background:#0a0a0a;color:#ffffff;border:1px solid #222;border-radius:16px;padding:24px;max-width:560px;width:90%;position:relative;box-shadow: 0 25px 60px rgba(0,0,0,0.7);">
+            <span class="close"
+                style="position:absolute;top:16px;right:20px;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;transition:color 0.2s;"
+                onmouseenter="this.style.color='#fff'" onmouseleave="this.style.color='#94a3b8'">&#10005;</span>
+            <h2 style="color:#ffffff;margin-bottom:4px;font-size:1.25rem;font-weight:700;"><i
+                    class="fas fa-building me-2" style="color:#4CAF50;"></i>Business Information</h2>
+            <p style="color:#64748b;font-size:0.82rem;margin-bottom:16px;">Fill in your details to check feasibility and
+                find the ideal location.</p>
+            <form id="business-form">
+                {% csrf_token %}
+                <!-- Name & Email row -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                    <div>
+                        <label
+                            style="color:#94a3b8;font-weight:600;font-size:0.78rem;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em;">Your
+                            Name</label>
+                        <input type="text" id="id_name" name="name" class="form-control biz-input"
+                            placeholder="Full name" required>
+                    </div>
+                    <div>
+                        <label
+                            style="color:#94a3b8;font-weight:600;font-size:0.78rem;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em;">Email</label>
+                        <input type="email" id="id_email" name="email" class="form-control biz-input"
+                            placeholder="you@example.com" required>
+                    </div>
+                </div>
+
+                <!-- Phone -->
+                <div style="margin-bottom:10px;">
+                    <label
+                        style="color:#94a3b8;font-weight:600;font-size:0.78rem;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em;"><i
+                            class="fas fa-phone me-1" style="color:#4CAF50;"></i>Phone</label>
+                    <input type="text" id="id_phone" name="phone" class="form-control biz-input"
+                        placeholder="Phone number" required>
+                </div>
+
+                <!-- Business Location -->
+                <div style="margin-bottom:10px;position:relative;">
+                    <label
+                        style="color:#94a3b8;font-weight:600;font-size:0.78rem;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em;"><i
+                            class="fas fa-map-marker-alt me-1" style="color:#4CAF50;"></i>Business Location</label>
+                    <input type="text" id="form-location-search" class="form-control biz-input"
+                        placeholder="Search area to load business types...">
+                    <div id="form-location-suggestions" class="suggestions-list"></div>
+                </div>
+
+                <!-- Business Type DROPDOWN -->
+                <div style="margin-bottom:10px;">
+                    <label
+                        style="color:#94a3b8;font-weight:600;font-size:0.78rem;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em;"><i
+                            class="fas fa-store me-1" style="color:#4CAF50;"></i>Business Type to Start</label>
+                    <select id="id_business_type_dropdown" name="business_type" class="form-control biz-select"
+                        required>
+                        <option value="">-- Search a location first --</option>
+                        <!-- Options populated dynamically by JS after location is selected -->
+                    </select>
+                    <input type="hidden" id="id_business_type" name="business_type_val">
+                    <small id="form-flow-hint" style="color:#64748b;font-size:0.75rem;margin-top:4px;display:block;">
+                        <i class="fas fa-info-circle me-1"></i>Select a location above to load recommended business
+                        types.
+                    </small>
+                </div>
+
+                <!-- Desired Crowd Intensity -->
+                <div style="margin-bottom:16px;">
+                    <label
+                        style="color:#94a3b8;font-weight:600;font-size:0.78rem;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em;"><i
+                            class="fas fa-users me-1" style="color:#4CAF50;"></i>Desired Crowd Intensity</label>
+                    <select id="id_crowd_intensity" name="crowd_intensity" class="form-control biz-select" required>
+                        <option value="">-- Select intensity --</option>
+                        <option value="low">Low — Quiet, few visitors</option>
+                        <option value="medium">Moderate — Steady foot traffic</option>
+                        <option value="high">High — Busy, high footfall</option>
+                    </select>
+                </div>
+
+                <!-- Hidden fields -->
+                <input type="hidden" id="id_recommended_business" name="recommended_business">
+                <input type="hidden" id="id_business_type_search" name="business_type_hidden">
+                <input type="hidden" id="id_business_type_select" name="business_type_hidden2">
+                <input type="hidden" id="id_latitude" name="latitude">
+                <input type="hidden" id="id_longitude" name="longitude">
+
+                <!-- Feasibility Result Banner -->
+                <div id="feasibility-result-banner"
+                    style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:0.88rem;font-weight:600;">
+                </div>
+
+                <!-- Action Buttons: Submit + Reset -->
+                <div style="display:flex;gap:10px;">
+                    <button type="submit" id="submit-business-form-btn"
+                        style="flex:1;padding:10px;background:linear-gradient(135deg,#4CAF50,#2e7d32);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.03em;">
+                        <i class="fas fa-check-circle me-2"></i>Check Feasibility & Submit
+                    </button>
+                    <button type="button" id="reset-business-form-btn"
+                        style="padding:10px 18px;background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.2s;"
+                        onclick="document.getElementById('business-form').reset(); document.getElementById('id_business_type_dropdown').innerHTML='<option value=\'\'>-- Search a location first --</option>'; document.getElementById('feasibility-result-banner').style.display='none'; document.getElementById('form-message').innerHTML=''; document.getElementById('id_latitude').value=''; document.getElementById('id_longitude').value='';">
+                        <i class="fas fa-redo me-1"></i>Reset
+                    </button>
+                </div>
+            </form>
+            <div id="form-message" class="form-message" style="margin-top:10px;font-size:0.88rem;"></div>
+        </div>
+    </div>
+
+
+    <!-- Chat Toggle (floating FAB to open chatbot) -->
+    <button type="button" id="chat-toggle-btn" class="chat-fab-btn" title="Open Chat" aria-label="Open chat assistant">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <!-- Chatbot Sidebar -->
+    <aside id="chatbot-sidebar" class="chatbot-sidebar chatbot-sidebar-closed">
+        <div id="chatbot-container" class="chatbot-container">
+            <div class="chatbot-header">
+                <h3>Assistant</h3>
+                <div class="chatbot-header-actions">
+                    <button type="button" id="chatbot-toggle" class="chatbot-toggle-btn" title="Minimize">-</button>
+                    <button type="button" id="chatbot-close-btn" class="chatbot-close-btn" title="Close">x</button>
+                </div>
+            </div>
+            <div id="chatbot-messages" class="chatbot-messages"></div>
+            <div id="chatbot-suggestions-container" class="chatbot-suggestions"></div>
+            <div class="chatbot-input-container">
+                <input type="text" id="chatbot-input" class="chatbot-input" placeholder="Type your message...">
+                <button type="button" id="chatbot-send" class="chatbot-send-btn">Send</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Map Toggle (main.js compatibility, hidden) -->
+    <button type="button" id="map-toggle-btn" class="d-none" aria-hidden="true"></button>
+</body>
+
+</html>

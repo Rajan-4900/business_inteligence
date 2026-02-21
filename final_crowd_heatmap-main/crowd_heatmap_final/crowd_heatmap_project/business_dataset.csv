@@ -1,0 +1,61 @@
+crowd,shops,area,business
+high,high,commercial,Cafe
+high,high,market,Restaurant
+high,medium,college,Fast Food
+high,high,mall,Food Court
+high,medium,office,Coffee Shop
+high,high,commercial,Bakery
+high,high,market,Juice Bar
+high,high,mall,Ice Cream Parlour
+high,high,commercial,Supermarket
+high,high,market,Clothing Store
+high,high,mall,Electronics Store
+high,high,commercial,Mobile Shop
+high,medium,college,Stationery Shop
+high,high,market,Jewellery Store
+high,high,mall,Footwear Store
+high,high,commercial,Pharmacy
+high,high,market,Cosmetics Store
+high,medium,commercial,Salon
+high,high,mall,Gym
+high,high,commercial,Cinema
+high,medium,office,ATM
+high,high,market,Street Food Stall
+high,high,commercial,Sweet Shop
+high,medium,college,Photocopy Shop
+high,high,mall,Sports Store
+medium,medium,residential,Grocery Store
+medium,low,residential,Medical Store
+medium,medium,commercial,Clothing Boutique
+medium,medium,city_center,Book Store
+medium,medium,residential,Vegetable Shop
+medium,low,residential,Flower Shop
+medium,medium,commercial,Laundry Service
+medium,medium,residential,Coaching Centre
+medium,low,residential,Tailoring Shop
+medium,medium,city_center,Courier Service
+medium,medium,residential,Printing Shop
+medium,low,residential,Cycle Repair
+medium,medium,commercial,Pet Shop
+medium,medium,city_center,Travel Agency
+medium,low,residential,Tiffin Service
+medium,medium,residential,Milk Booth
+medium,medium,city_center,Internet Cafe
+medium,low,residential,Tuition Centre
+medium,medium,commercial,Optical Store
+medium,medium,residential,Fruit Shop
+low,low,industrial,Warehouse
+low,low,outskirts,Storage Facility
+low,medium,residential,Hardware Store
+low,low,village,Dairy Farm
+low,low,industrial,Auto Repair Shop
+low,low,outskirts,Wholesale Store
+low,low,industrial,Timber Yard
+low,low,outskirts,Plumbing Supply
+low,low,industrial,Cold Storage
+low,low,outskirts,Logistics Hub
+low,low,industrial,Scrap Dealer
+low,low,village,Poultry Farm
+low,low,industrial,Fabrication Shop
+low,low,outskirts,Fuel Station
+low,low,industrial,Spare Parts Shop

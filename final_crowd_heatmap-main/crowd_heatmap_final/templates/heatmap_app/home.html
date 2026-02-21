@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Smart Bus Crowd Heatmap System - Crowd Heatmap{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+{% endblock %}
+
+{% block navbar_extra %}{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="home-hero">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 text-center">
+                <h1 class="hero-title">Ai Based Business Intelligence Using Heatmap</h1>
+                <p class="hero-subtitle">Real-time crowd density visualization for smarter bus route planning and
+                    business location insights. Discover the best spots based on live data.</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a class="btn hero-cta" href="{% url 'dashboard' %}"><i class="fas fa-th-large me-2"></i>Go to
+                        Dashboard</a>
+                    <a class="btn hero-cta btn-outline-light" href="{% url 'dashboard' %}?auto_map=true"><i
+                            class="fas fa-map-marked-alt me-2"></i>Quick Map</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- AI recommendation panel intentionally lives only on dashboard.html -->
+
+{% endblock %}
+
+{% block footer %}
+<footer class="footer-base">
+    <div class="container-fluid container-custom">
+        <div class="row align-items-center">
+            <div class="col-md-6 text-center text-md-start">
+                <span class="footer-brand"><i class="fas fa-map-location-dot me-2"></i>Crowd Heatmap</span>
+                <span class="footer-tagline">Discover the best location for your business</span>
+            </div>
+            <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}" class="footer-link">Log In</a>
+                <a href="{% url 'register' %}" class="footer-link">Register</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="footer-bottom text-center text-muted small mt-3">
+            &copy; {% now "Y" %} Crowd Heatmap. All rights reserved.
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<!-- Cinematic Mode Toggle -->
+<button type="button" id="explore-mode-toggle" class="explore-mode-btn" title="Toggle Cinematic View">
+    <i class="fas fa-eye"></i>
+</button>
+
+{% endblock %}

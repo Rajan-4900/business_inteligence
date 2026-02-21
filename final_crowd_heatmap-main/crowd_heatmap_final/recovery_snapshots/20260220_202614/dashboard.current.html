@@ -1,0 +1,320 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Crowd Heatmap{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+{% endblock %}
+
+{% block navbar_extra %}
+<button id="theme-toggle-btn" class="btn btn-nav btn-outline" title="Toggle Dark/Light Mode">
+    <i class="fas fa-moon" id="theme-icon"></i>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-brand"><i class="fas fa-layer-group me-2"></i>Control Center</div>
+        <nav class="sidebar-nav">
+            <a class="sidebar-link active" href="{% url 'dashboard' %}"><i class="fas fa-th-large me-2"></i>Dashboard</a>
+            <a class="sidebar-link" href="{% url 'home' %}"><i class="fas fa-home me-2"></i>Home</a>
+            <a class="sidebar-link" href="{% url 'contact_us' %}"><i class="fas fa-envelope me-2"></i>Contact</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <span class="sidebar-user-name">{{ user.full_name|default:user.username }}</span>
+                <span class="user-type-badge {% if user.user_type == 'businessman' %}user-type-businessman{% else %}user-type-customer{% endif %}">
+                    {{ user.user_type|default:'user'|title }}
+                </span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div class="d-flex align-items-center gap-2">
+                <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="dashboard-title">Business Intelligence Dashboard</h1>
+            </div>
+            <div class="dashboard-header-actions">
+                <button id="form-trigger-btn" type="button" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-file-signature me-1"></i>Business Form
+                </button>
+                <a href="{% url 'home' %}" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i>Home
+                </a>
+            </div>
+        </header>
+
+        <section class="dashboard-cards">
+            <article class="dashboard-card">
+                <div class="dashboard-card-icon icon-crowds"><i class="fas fa-users"></i></div>
+                <div class="dashboard-card-body">
+                    <div class="dashboard-card-value">5000</div>
+                    <div class="dashboard-card-label">Area Radius (m)</div>
+                </div>
+            </article>
+            <article class="dashboard-card">
+                <div class="dashboard-card-icon icon-areas"><i class="fas fa-map"></i></div>
+                <div class="dashboard-card-body">
+                    <div class="dashboard-card-value">3</div>
+                    <div class="dashboard-card-label">Intensity Bands</div>
+                </div>
+            </article>
+            <article class="dashboard-card">
+                <div class="dashboard-card-icon icon-recommendations"><i class="fas fa-lightbulb"></i></div>
+                <div class="dashboard-card-body">
+                    <div class="dashboard-card-value">10</div>
+                    <div class="dashboard-card-label">Top Recommendations</div>
+                </div>
+            </article>
+            <article class="dashboard-card">
+                <div class="dashboard-card-icon icon-alerts"><i class="fas fa-bolt"></i></div>
+                <div class="dashboard-card-body">
+                    <div class="dashboard-card-value">24</div>
+                    <div class="dashboard-card-label">Live Updates (hrs)</div>
+                </div>
+            </article>
+        </section>
+
+        <section id="dashboard-launchpad" class="dashboard-launchpad">
+            <h2 class="dashboard-subtitle">Select Your Analysis Flow</h2>
+            <div class="dashboard-launchpad-grid">
+                <button id="btn-show-map" type="button" class="launchpad-card text-start border-0">
+                    <div>
+                        <div class="launchpad-icon icon-heatmap"><i class="fas fa-map-marked-alt"></i></div>
+                        <div class="launchpad-content">
+                            <h3>Open Live Map</h3>
+                            <p>Search, click, and track real-world locations with 5km crowd intelligence overlays.</p>
+                        </div>
+                    </div>
+                    <div class="launchpad-action">Launch Map <i class="fas fa-arrow-right ms-2"></i></div>
+                </button>
+
+                <button id="btn-show-ai-recommender" type="button" class="launchpad-card text-start border-0">
+                    <div>
+                        <div class="launchpad-icon icon-ai"><i class="fas fa-brain"></i></div>
+                        <div class="launchpad-content">
+                            <h3>AI Strategy</h3>
+                            <p>Generate business feasibility recommendations and evaluate revenue potential instantly.</p>
+                        </div>
+                    </div>
+                    <div class="launchpad-action">Open AI Panel <i class="fas fa-arrow-right ms-2"></i></div>
+                </button>
+
+                <button id="btn-show-flashcards" type="button" class="launchpad-card text-start border-0">
+                    <div>
+                        <div class="launchpad-icon icon-flashcards"><i class="fas fa-id-card"></i></div>
+                        <div class="launchpad-content">
+                            <h3>Business Flashcards</h3>
+                            <p>Browse ranked nearby locations with score, timing, and revenue-oriented card summaries.</p>
+                        </div>
+                    </div>
+                    <div class="launchpad-action">View Flashcards <i class="fas fa-arrow-right ms-2"></i></div>
+                </button>
+            </div>
+        </section>
+
+        <section id="dynamic-map-container" class="dynamic-map-container d-none">
+            <div class="dynamic-map-header">
+                <div class="search-overlay-compact floating-map-search">
+                    <div class="position-relative flex-grow-1">
+                        <input id="dashboard-location-search" type="text" class="form-control" placeholder="Search areas, landmarks, or city zones...">
+                        <div id="dashboard-search-suggestions" class="search-suggestions-dropdown"></div>
+                    </div>
+                    <button id="dashboard-search-btn" type="button" class="btn btn-primary-blue">
+                        <i class="fas fa-search me-1"></i>Search
+                    </button>
+                    <div class="map-border-controls d-flex align-items-center gap-2">
+                        <button id="dashboard-find-location-btn" type="button" class="btn btn-map-control" title="Find My Location">
+                            <i class="fas fa-location-crosshairs"></i>
+                        </button>
+                        <button id="dashboard-popular-places-btn" type="button" class="btn btn-map-control" title="Find Popular Places">
+                            <i class="fas fa-store"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btn-back-to-dashboard" type="button" class="btn btn-back-dashboard">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </button>
+            </div>
+
+            <div class="px-3 pt-2">
+                <div id="location-error-msg" class="location-error-msg" style="display:none;"></div>
+                <div class="accuracy-meter-container">
+                    <label class="d-flex justify-content-between">
+                        <span>Location Accuracy</span>
+                        <span id="accuracy-value">0%</span>
+                    </label>
+                    <div class="progress" style="height:10px;">
+                        <div id="accuracy-meter" class="progress-bar bg-success" role="progressbar" style="width:0%;">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dashboard-map" class="dashboard-map-viewport"></div>
+
+            <div class="dynamic-map-footer">
+                <div class="legend-compact">
+                    <span class="badge bg-dark intensity-high"><span class="dot"></span>High</span>
+                    <span class="badge bg-dark intensity-medium"><span class="dot"></span>Medium</span>
+                    <span class="badge bg-dark intensity-low"><span class="dot"></span>Low</span>
+                </div>
+
+                <div id="map-status" class="map-status">Map standby</div>
+
+                <div id="revenue-prediction-display" class="revenue-prediction-display d-none">
+                    <div class="revenue-item">
+                        <span class="revenue-label">Monthly</span>
+                        <span id="revenue-value" class="revenue-value">Rs0</span>
+                    </div>
+                    <div class="revenue-item">
+                        <span class="revenue-label">Daily</span>
+                        <span id="daily-revenue-value" class="revenue-value">Rs0</span>
+                    </div>
+                    <div class="revenue-item">
+                        <span class="revenue-label">Peak Hr</span>
+                        <span id="peak-revenue-value" class="revenue-value">Rs0</span>
+                    </div>
+                    <div class="revenue-item">
+                        <span class="revenue-label">Crowd Score</span>
+                        <span id="crowd-score-value" class="revenue-value">--</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="dashboard-analytics-section" class="dashboard-analytics-section d-none">
+            <div class="row g-3">
+                <div class="col-xl-6">
+                    <div id="popular-places-panel" class="dashboard-analytics-panel static-panel d-none">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-store me-2"></i>Popular Places</h3>
+                            <div class="d-flex align-items-center gap-2">
+                                <button id="view-ai-insights-btn" type="button" class="btn btn-sm btn-outline-light">AI Insights</button>
+                                <button id="close-popular-places" type="button" class="btn-close-panel" aria-label="Close popular places panel">x</button>
+                                <button id="popular-places-close" type="button" class="d-none" aria-hidden="true">x</button>
+                            </div>
+                        </div>
+                        <div class="panel-content scrollable">
+                            <div id="popular-places-list" class="popular-places-list row g-2"></div>
+                            <hr class="border-secondary my-3">
+                            <h6 class="text-uppercase text-muted small mb-3">Flashcards</h6>
+                            <div id="popular-places-flashcards" class="row g-3"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-6">
+                    <div id="business-intelligence-panel" class="dashboard-analytics-panel static-panel intelligence-panel d-none">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-brain me-2"></i>Business Intelligence</h3>
+                            <button id="close-intelligence-panel" type="button" class="btn-close-panel" aria-label="Close intelligence panel">x</button>
+                        </div>
+                        <div class="panel-content scrollable">
+                            <ul class="nav dashboard-tabs mb-3" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button id="dash-recs-tab" class="nav-link active" data-bs-toggle="tab" data-bs-target="#dash-recs-pane" type="button" role="tab" aria-selected="true">Recommendations</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button id="dash-ai-tab" class="nav-link" data-bs-toggle="tab" data-bs-target="#dash-ai-pane" type="button" role="tab" aria-selected="false">AI Strategy</button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content">
+                                <div id="dash-recs-pane" class="tab-pane fade show active" role="tabpanel" aria-labelledby="dash-recs-tab">
+                                    <section id="business-recommendations-section">
+                                        <div id="business-recommendations-row" class="row g-3"></div>
+                                    </section>
+                                    <div class="d-flex align-items-center gap-2 mt-3">
+                                        <button id="generate-best-locations-btn" type="button" class="btn btn-sm btn-outline-light">
+                                            <i class="fas fa-crosshairs me-1"></i>Generate Best Locations
+                                        </button>
+                                    </div>
+                                    <div id="generated-best-locations-list" class="mt-3"></div>
+                                </div>
+
+                                <div id="dash-ai-pane" class="tab-pane fade" role="tabpanel" aria-labelledby="dash-ai-tab">
+                                    <div id="business-suggestion-card" class="business-suggestion-card">
+                                        <div id="business-suggestion-content" class="business-suggestion-content">
+                                            Select or search a location to load AI business strategy.
+                                        </div>
+                                    </div>
+
+                                    <div id="mlPrediction" class="mt-3 d-none"></div>
+
+                                    <div class="smart-revenue-grid mt-3">
+                                        <div class="smart-revenue-item">
+                                            <span>Estimated Monthly</span>
+                                            <strong id="bi-estimated-monthly">Rs0</strong>
+                                        </div>
+                                        <div class="smart-revenue-item">
+                                            <span>Daily Revenue</span>
+                                            <strong id="bi-daily-revenue">Rs0</strong>
+                                        </div>
+                                        <div class="smart-revenue-item">
+                                            <span>Peak Hour</span>
+                                            <strong id="bi-peak-hour">Rs0</strong>
+                                        </div>
+                                        <div class="smart-revenue-item">
+                                            <span>Overload Risk</span>
+                                            <strong id="bi-overload-risk">--</strong>
+                                        </div>
+                                        <div class="smart-revenue-item">
+                                            <span>Potential Score</span>
+                                            <strong id="bi-potential-score">--</strong>
+                                        </div>
+                                        <div class="smart-revenue-item">
+                                            <span>Business Health</span>
+                                            <strong id="bi-business-health">--</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="heatmap-toast" class="heatmap-toast"></div>
+
+<div id="ai-insights-modal" class="d-none position-fixed top-0 start-0 w-100 h-100" style="z-index:1080;background:rgba(0,0,0,0.65);">
+    <div class="container h-100 d-flex align-items-center justify-content-center">
+        <div class="card text-bg-dark border-secondary" style="max-width:640px;width:100%;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>AI Insight Snapshot</h5>
+                <button id="close-ai-modal" type="button" class="btn btn-sm btn-outline-light">Close</button>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">Use the map to select a location and run analysis to populate dynamic AI insights.</p>
+                <ul class="mb-0">
+                    <li>Monthly and daily revenue estimates</li>
+                    <li>Crowd and feasibility score trend</li>
+                    <li>Actionable launch recommendations</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="find-location-btn" type="button" class="d-none" aria-hidden="true"></button>
+<button id="popular-places-btn" type="button" class="d-none" aria-hidden="true"></button>
+
+<button type="button" id="explore-mode-toggle" class="explore-mode-btn" title="Toggle Cinematic View">
+    <i class="fas fa-eye"></i>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+{% endblock %}
